@@ -1,0 +1,21 @@
+/* User overrides.
+   Default styles live in ../../defaults/style.css and load before this file.
+   Keep this file small: override variables or specific classes as needed. */
+
+:root {
+  /* --color-primary: #0f766e; */
+  /* --color-page: #ffffff; */
+  /* --font-body: Inter, ui-sans-serif, system-ui, sans-serif; */
+}
+
+/* Example layout tweak:
+.content-container {
+  max-width: 64ch;
+}
+*/
+
+/* Example header tweak:
+.site-header {
+  border-bottom-color: var(--color-border);
+}
+*/
