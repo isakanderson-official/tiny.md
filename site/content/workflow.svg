@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" role="img" aria-labelledby="title desc">
+  <title id="title">tiny.md workflow</title>
+  <desc id="desc">Markdown files and theme assets are built into static HTML and CSS output.</desc>
+  <rect width="960" height="360" rx="28" fill="#f1f5f9"/>
+  <g fill="#ffffff" stroke="#d7dee8" stroke-width="2">
+    <rect x="60" y="82" width="220" height="196" rx="18"/>
+    <rect x="370" y="82" width="220" height="196" rx="18"/>
+    <rect x="680" y="82" width="220" height="196" rx="18"/>
+  </g>
+  <g fill="#0f172a" font-family="ui-sans-serif, system-ui, sans-serif">
+    <text x="92" y="134" font-size="30" font-weight="800">Write</text>
+    <text x="402" y="134" font-size="30" font-weight="800">Build</text>
+    <text x="712" y="134" font-size="30" font-weight="800">Publish</text>
+  </g>
+  <g fill="#475569" font-family="ui-sans-serif, system-ui, sans-serif" font-size="20">
+    <text x="92" y="176">Markdown pages</text>
+    <text x="92" y="208">CSS theme</text>
+    <text x="92" y="240">Local assets</text>
+    <text x="402" y="176">Run npm build</text>
+    <text x="402" y="208">Copy assets</text>
+    <text x="402" y="240">Create dist/</text>
+    <text x="712" y="176">Static HTML</text>
+    <text x="712" y="208">Clean URLs</text>
+    <text x="712" y="240">No server required</text>
+  </g>
+  <g fill="none" stroke="#0f766e" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M300 180h46"/>
+    <path d="M334 160l20 20-20 20"/>
+    <path d="M610 180h46"/>
+    <path d="M644 160l20 20-20 20"/>
+  </g>
+  <g fill="#0f766e">
+    <circle cx="170" cy="286" r="8"/>
+    <circle cx="480" cy="286" r="8"/>
+    <circle cx="790" cy="286" r="8"/>
+  </g>
+</svg>

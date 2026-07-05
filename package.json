@@ -1,11 +1,46 @@
 {
   "name": "tiny.md",
-  "description": "A tiny folder-and-Markdown static site generator.",
+  "description": "A tiny Markdown static site generator for folder-based websites.",
   "version": "1.0.0",
-  "private": true,
   "type": "module",
+  "homepage": "https://github.com/isakanderson-official/tiny.md#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/isakanderson-official/tiny.md.git"
+  },
+  "bugs": {
+    "url": "https://github.com/isakanderson-official/tiny.md/issues"
+  },
+  "keywords": [
+    "static-site-generator",
+    "markdown",
+    "ssg",
+    "website-builder",
+    "github-pages",
+    "documentation",
+    "portfolio",
+    "open-graph",
+    "sitemap",
+    "seo"
+  ],
+  "bin": {
+    "tiny.md": "./create.mjs"
+  },
+  "files": [
+    "build.mjs",
+    "create.mjs",
+    "defaults",
+    "README.md"
+  ],
   "scripts": {
     "build": "node build.mjs",
-    "dev": "node build.mjs --watch --serve"
+    "dev": "node build.mjs --watch --serve",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "marked": "^18.0.5"
   }
 }

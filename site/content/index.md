@@ -1,21 +1,57 @@
 ---
-description: A tiny folder-based static site built from Markdown and CSS.
+description: tiny.md turns folders of Markdown into fast static websites for docs, portfolios, project pages, and GitHub Pages.
 ---
 
-# Home
+# tiny.md
 
-I build practical software, small tools, and clear writing for the web.
+A small static site generator for people who want a website they can understand.
 
-![Abstract desk illustration](workspace.svg)
+![tiny.md workflow](workflow.svg)
 
-This starter site is intentionally simple: folders become pages, Markdown becomes content, and CSS controls the visual system.
+tiny.md turns a `site/` folder into a complete `dist/` folder. Write pages in Markdown, keep assets beside the pages that use them, and customize the design with plain CSS.
 
-You can also paste a YouTube URL on its own line to embed a video:
+## Why it exists
 
-https://www.youtube.com/watch?v=jNQXAC9IVRw
+- The authoring model is easy to remember.
+- The generated output is plain static HTML, CSS, and assets.
+- The generated HTML is semantic and ready to publish.
+- Search metadata, canonical URLs, social cards, and sitemaps are built in.
+- Default styles are automatic, but your CSS still wins.
 
-Use normal Markdown links to move between pages:
+## How it works
 
-- [About](/about)
+Each page is a folder with an `index.md` file:
 
-The generated HTML is semantic, SEO-friendly, and wrapped in stable layout containers that you can style from `site/theme/style.css`.
+```txt
+site/
+  site.md
+  content/
+    index.md
+    notes/
+      index.md
+  theme/
+    style.css
+```
+
+The build creates clean static files:
+
+```txt
+dist/
+  index.html
+  notes/
+    index.html
+  default.css
+  style.css
+```
+
+## Start here
+
+Create a new site with one command:
+
+```sh
+npx tiny.md my-site
+```
+
+Then edit Markdown files in `site/content/` and run `npm run build` when you are ready to publish.
+
+[Follow the quickstart](/quickstart)

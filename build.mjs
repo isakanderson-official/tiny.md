@@ -4,6 +4,7 @@ import { createServer } from "node:http";
 import { watch } from "node:fs";
 import { cp, mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { marked } from "marked";
 
 const rootDir = process.cwd();
 const defaultsDir = path.join(rootDir, "defaults");
@@ -57,7 +58,7 @@ async function buildSite() {
   const headerNav = site.nav.length > 0 ? site.nav : nav;
 
   for (const page of pages) {
-    const html = renderPage({ page, pages, nav: headerNav, site });
+    const html = renderPage({ page, nav: headerNav, site });
     const outputDir = path.join(distDir, page.outputPath);
     await mkdir(outputDir, { recursive: true });
     await writeFile(path.join(outputDir, "index.html"), html);
@@ -82,6 +83,7 @@ async function readSiteConfig() {
       name: siteName,
       description: parsed.data.description || "",
       url: normalizeSiteUrl(parsed.data.url || ""),
+      image: parsed.data.image || "",
       nav: parseSectionLinks(parsed.body, "Navigation"),
       actions: parseSectionLinks(parsed.body, "Actions").map((item) => ({
         ...item,
@@ -95,6 +97,7 @@ async function readSiteConfig() {
         name: "My Site",
         description: "",
         url: "",
+        image: "",
         nav: [],
         actions: [],
         footer: false,
@@ -118,14 +121,14 @@ async function collectPages(dir, routeParts = []) {
     const outputPath = route || ".";
     const title = parsed.data.title || findFirstHeading(parsed.body) || titleFromRoute(routeParts) || "Home";
     const description = parsed.data.description || "";
+    const image = parsed.data.image || "";
 
     pages.push({
-      sourcePath: indexPath,
-      routeParts,
       urlPath,
       outputPath,
       title,
       description,
+      image,
       markdown: parsed.body,
     });
   }
@@ -134,9 +137,11 @@ async function collectPages(dir, routeParts = []) {
     .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  for (const entry of childDirs) {
-    pages.push(...(await collectPages(path.join(dir, entry.name), [...routeParts, entry.name])));
-  }
+  const childPages = await Promise.all(
+    childDirs.map((entry) => collectPages(path.join(dir, entry.name), [...routeParts, entry.name])),
+  );
+
+  pages.push(...childPages.flat());
 
   return pages;
 }
@@ -222,8 +227,26 @@ function parseSectionLinks(markdown, sectionTitle) {
 }
 
 function findFirstHeading(markdown) {
-  const match = markdown.match(/^#\s+(.+)$/m);
-  return match ? plainText(match[1]) : "";
+  const heading = findFirstHeadingToken(marked.lexer(markdown));
+  return heading ? plainText(heading.text) : "";
+}
+
+function findFirstHeadingToken(tokens) {
+  for (const token of tokens) {
+    if (token.type === "heading" && token.depth === 1) {
+      return token;
+    }
+
+    if (Array.isArray(token.tokens)) {
+      const heading = findFirstHeadingToken(token.tokens);
+
+      if (heading) {
+        return heading;
+      }
+    }
+  }
+
+  return null;
 }
 
 function titleFromRoute(routeParts) {
@@ -244,6 +267,7 @@ function renderPage({ page, nav, site }) {
   const title = site.name && page.title !== site.name ? `${page.title} | ${site.name}` : page.title;
   const description = page.description || site.description;
   const canonical = site.url ? absoluteUrl(site.url, page.urlPath) : "";
+  const image = socialImageUrl(page.image || site.image, site.url, page.urlPath);
   const defaultStylesheetPath = relativeAssetPath(page.urlPath, "/default.css");
   const stylesheetPath = relativeAssetPath(page.urlPath, "/style.css");
   const faviconPath = relativeAssetPath(page.urlPath, "/favicon.svg");
@@ -257,11 +281,18 @@ function renderPage({ page, nav, site }) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(title)}</title>
   ${description ? `<meta name="description" content="${escapeHtml(description)}">` : ""}
+  <meta name="generator" content="tiny.md">
   ${canonical ? `<link rel="canonical" href="${escapeHtml(canonical)}">` : ""}
   <meta property="og:title" content="${escapeHtml(page.title)}">
   ${description ? `<meta property="og:description" content="${escapeHtml(description)}">` : ""}
+  <meta property="og:site_name" content="${escapeHtml(site.name)}">
   <meta property="og:type" content="website">
   ${canonical ? `<meta property="og:url" content="${escapeHtml(canonical)}">` : ""}
+  ${image ? `<meta property="og:image" content="${escapeHtml(image)}">` : ""}
+  <meta name="twitter:card" content="${image ? "summary_large_image" : "summary"}">
+  <meta name="twitter:title" content="${escapeHtml(page.title)}">
+  ${description ? `<meta name="twitter:description" content="${escapeHtml(description)}">` : ""}
+  ${image ? `<meta name="twitter:image" content="${escapeHtml(image)}">` : ""}
   <link rel="icon" href="${escapeHtml(faviconPath)}" type="image/svg+xml">
   <link rel="stylesheet" href="${escapeHtml(defaultStylesheetPath)}">
   <link rel="stylesheet" href="${escapeHtml(stylesheetPath)}">
@@ -291,7 +322,7 @@ function renderPage({ page, nav, site }) {
   <main class="site-main">
     <article class="page-content">
       <div class="content-container content">
-${indent(contentHtml, 8)}
+${contentHtml}
       </div>
     </article>
   </main>
@@ -351,147 +382,46 @@ function renderFooter(site) {
 }
 
 function markdownToHtml(markdown, currentUrlPath) {
-  const lines = markdown.replace(/\r\n/g, "\n").split("\n");
-  const blocks = [];
-  let index = 0;
-
-  while (index < lines.length) {
-    const line = lines[index];
-
-    if (!line.trim()) {
-      index += 1;
-      continue;
-    }
-
-    if (line.startsWith("```")) {
-      const language = line.slice(3).trim();
-      const code = [];
-      index += 1;
-
-      while (index < lines.length && !lines[index].startsWith("```")) {
-        code.push(lines[index]);
-        index += 1;
-      }
-
-      index += 1;
-      const className = language ? ` class="language-${escapeHtml(language)}"` : "";
-      blocks.push(`<pre><code${className}>${escapeHtml(code.join("\n"))}</code></pre>`);
-      continue;
-    }
-
-    const heading = line.match(/^(#{1,6})\s+(.+)$/);
-
-    if (heading) {
-      const level = heading[1].length;
-      blocks.push(`<h${level}>${inlineMarkdown(heading[2], currentUrlPath)}</h${level}>`);
-      index += 1;
-      continue;
-    }
-
-    if (/^---+$/.test(line.trim())) {
-      blocks.push("<hr>");
-      index += 1;
-      continue;
-    }
-
-    const youtubeEmbedUrl = youtubeEmbedFromUrl(line.trim());
-
-    if (youtubeEmbedUrl) {
-      blocks.push(renderVideoEmbed(youtubeEmbedUrl));
-      index += 1;
-      continue;
-    }
-
-    if (/^>\s?/.test(line)) {
-      const quote = [];
-
-      while (index < lines.length && /^>\s?/.test(lines[index])) {
-        quote.push(lines[index].replace(/^>\s?/, ""));
-        index += 1;
-      }
-
-      blocks.push(`<blockquote>${markdownToHtml(quote.join("\n"), currentUrlPath)}</blockquote>`);
-      continue;
-    }
-
-    if (/^\s*[-*]\s+/.test(line)) {
-      const items = [];
-
-      while (index < lines.length && /^\s*[-*]\s+/.test(lines[index])) {
-        items.push(lines[index].replace(/^\s*[-*]\s+/, ""));
-        index += 1;
-      }
-
-      blocks.push(`<ul>${items.map((item) => `<li>${inlineMarkdown(item, currentUrlPath)}</li>`).join("")}</ul>`);
-      continue;
-    }
-
-    if (/^\s*\d+\.\s+/.test(line)) {
-      const items = [];
-
-      while (index < lines.length && /^\s*\d+\.\s+/.test(lines[index])) {
-        items.push(lines[index].replace(/^\s*\d+\.\s+/, ""));
-        index += 1;
-      }
-
-      blocks.push(`<ol>${items.map((item) => `<li>${inlineMarkdown(item, currentUrlPath)}</li>`).join("")}</ol>`);
-      continue;
-    }
-
-    const paragraph = [line.trim()];
-    index += 1;
-
-    while (
-      index < lines.length &&
-      lines[index].trim() &&
-      !lines[index].startsWith("```") &&
-      !/^(#{1,6})\s+/.test(lines[index]) &&
-      !/^---+$/.test(lines[index].trim()) &&
-      !/^>\s?/.test(lines[index]) &&
-      !/^\s*[-*]\s+/.test(lines[index]) &&
-      !/^\s*\d+\.\s+/.test(lines[index])
-    ) {
-      paragraph.push(lines[index].trim());
-      index += 1;
-    }
-
-    blocks.push(`<p>${inlineMarkdown(paragraph.join(" "), currentUrlPath)}</p>`);
-  }
-
-  return blocks.join("\n");
+  return marked.parse(markdown, {
+    async: false,
+    gfm: true,
+    renderer: createMarkdownRenderer(currentUrlPath),
+  });
 }
 
-function inlineMarkdown(text, currentUrlPath) {
-  const tokens = [];
-  let output = escapeHtml(text)
-    .replace(/`([^`]+)`/g, (_, code) => {
-      const token = stash(tokens, `<code>${code}</code>`);
-      return token;
-    })
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, src) => {
-      const url = rewriteUrl(src, currentUrlPath);
-      return stash(tokens, `<img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}">`);
-    })
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, href) => {
-      const url = rewriteUrl(href, currentUrlPath);
-      return stash(tokens, `<a href="${escapeHtml(url)}">${label}</a>`);
-    })
-    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*([^*]+)\*/g, "<em>$1</em>")
-    .replace(/__([^_]+)__/g, "<strong>$1</strong>")
-    .replace(/_([^_]+)_/g, "<em>$1</em>");
+function createMarkdownRenderer(currentUrlPath) {
+  const renderer = new marked.Renderer();
 
-  for (const [token, value] of tokens) {
-    output = output.replace(token, value);
-  }
+  renderer.code = ({ text, lang }) => {
+    const language = String(lang || "").trim();
+    const className = language ? ` class="language-${escapeHtml(language)}"` : "";
+    return `<pre><code${className}>${escapeHtml(text)}</code></pre>`;
+  };
 
-  return output;
-}
+  renderer.link = function ({ href, title, tokens }) {
+    const url = rewriteUrl(href, currentUrlPath);
+    const titleAttribute = title ? ` title="${escapeHtml(title)}"` : "";
+    return `<a href="${escapeHtml(url)}"${titleAttribute}>${this.parser.parseInline(tokens)}</a>`;
+  };
 
-function stash(tokens, value) {
-  const token = `%%TOKEN${tokens.length}%%`;
-  tokens.push([token, value]);
-  return token;
+  renderer.image = function ({ href, title, text, tokens }) {
+    const url = rewriteUrl(href, currentUrlPath);
+    const alt = tokens ? this.parser.parseInline(tokens, this.parser.textRenderer) : text;
+    const titleAttribute = title ? ` title="${escapeHtml(title)}"` : "";
+    return `<img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}"${titleAttribute}>`;
+  };
+
+  renderer.paragraph = function (token) {
+    const youtubeEmbedUrl = youtubeEmbedFromUrl(token.text.trim());
+
+    if (youtubeEmbedUrl && token.raw.trim() === token.text.trim()) {
+      return renderVideoEmbed(youtubeEmbedUrl);
+    }
+
+    return `<p>${this.parser.parseInline(token.tokens)}</p>\n`;
+  };
+
+  return renderer;
 }
 
 function youtubeEmbedFromUrl(value) {
@@ -526,20 +456,6 @@ function renderVideoEmbed(embedUrl) {
 </div>`;
 }
 
-function normalizeConfigLinks(links) {
-  if (!Array.isArray(links)) {
-    return [];
-  }
-
-  return links
-    .map((item) => ({
-      label: String(item.label || item.title || "").trim(),
-      href: String(item.href || item.url || "").trim(),
-      style: String(item.style || "").trim(),
-    }))
-    .filter((item) => item.label && item.href);
-}
-
 function normalizeFooter(footer, siteName) {
   if (footer === false || footer === null || footer === undefined) {
     return false;
@@ -554,31 +470,21 @@ function normalizeFooter(footer, siteName) {
 }
 
 function linkHref(href, currentUrlPath) {
-  if (isExternalLikeHref(href)) {
-    return href;
-  }
-
-  const [pathPart, suffix = ""] = splitUrlSuffix(href);
-
-  if (pathPart.startsWith("/")) {
-    return relativeLink(currentUrlPath, normalizeInternalPath(pathPart)) + suffix;
-  }
-
-  return href;
+  const internal = internalRootLink(href);
+  return internal ? relativeLink(currentUrlPath, internal.path) + internal.suffix : href;
 }
 
 function isCurrentPage(href, currentUrlPath) {
+  return internalRootLink(href)?.path === currentUrlPath;
+}
+
+function internalRootLink(href) {
   if (isExternalLikeHref(href)) {
-    return false;
+    return null;
   }
 
-  const [pathPart] = splitUrlSuffix(href);
-
-  if (!pathPart.startsWith("/")) {
-    return false;
-  }
-
-  return normalizeInternalPath(pathPart) === currentUrlPath;
+  const [pathPart, suffix = ""] = splitUrlSuffix(href);
+  return pathPart.startsWith("/") ? { path: normalizeInternalPath(pathPart), suffix } : null;
 }
 
 function isExternalLikeHref(href) {
@@ -640,11 +546,8 @@ function normalizePathname(urlPath) {
 }
 
 function relativeAssetPath(fromUrlPath, assetUrlPath) {
-  const fromDir = fromUrlPath === "/" ? "/" : fromUrlPath;
-  const fromOutputDir = fromDir.replace(/^\//, "");
   const toOutputPath = assetUrlPath.replace(/^\/+/, "");
-  const relative = path.posix.relative(fromOutputDir, toOutputPath) || ".";
-  return relative.startsWith(".") ? relative : `./${relative}`;
+  return dotRelative(fromUrlPath, toOutputPath);
 }
 
 function relativeLink(fromUrlPath, toUrlPath) {
@@ -652,10 +555,8 @@ function relativeLink(fromUrlPath, toUrlPath) {
     return ".";
   }
 
-  const fromDir = fromUrlPath === "/" ? "/" : fromUrlPath;
-  const fromOutputDir = fromDir.replace(/^\//, "");
   const toOutputPath = toUrlPath === "/" ? "./" : `${toUrlPath.replace(/^\/|\/$/g, "")}/`;
-  let relative = path.posix.relative(fromOutputDir, toOutputPath) || ".";
+  let relative = path.posix.relative(outputDirFromUrl(fromUrlPath), toOutputPath) || ".";
 
   if (relative === "..") {
     relative = "../";
@@ -663,8 +564,19 @@ function relativeLink(fromUrlPath, toUrlPath) {
     relative = `${relative}/`;
   }
 
-  const cleanRelative = relative;
-  return cleanRelative.startsWith(".") ? cleanRelative : `./${cleanRelative}`;
+  return dotPrefix(relative);
+}
+
+function dotRelative(fromUrlPath, toOutputPath) {
+  return dotPrefix(path.posix.relative(outputDirFromUrl(fromUrlPath), toOutputPath) || ".");
+}
+
+function outputDirFromUrl(urlPath) {
+  return urlPath.replace(/^\//, "");
+}
+
+function dotPrefix(relativePath) {
+  return relativePath.startsWith(".") ? relativePath : `./${relativePath}`;
 }
 
 function renderSitemap(site, pages) {
@@ -677,6 +589,27 @@ function renderSitemap(site, pages) {
 ${urls}
 </urlset>
 `;
+}
+
+function socialImageUrl(image, siteUrl, currentUrlPath) {
+  const trimmed = String(image || "").trim();
+
+  if (!trimmed || /^(https?:)?\/\//.test(trimmed)) {
+    return trimmed;
+  }
+
+  if (!siteUrl) {
+    return "";
+  }
+
+  const [pathPart, suffix = ""] = splitUrlSuffix(trimmed);
+
+  if (pathPart.startsWith("/")) {
+    return absoluteUrl(siteUrl, normalizePathname(pathPart)) + suffix;
+  }
+
+  const currentDir = currentUrlPath === "/" ? "/" : currentUrlPath;
+  return absoluteUrl(siteUrl, normalizePathname(path.posix.join(currentDir, pathPart))) + suffix;
 }
 
 async function copyThemeAssets() {
@@ -773,24 +706,25 @@ function serveDist(serverPort) {
 async function resolveFilePath(urlPath) {
   const safePath = path.normalize(urlPath).replace(/^(\.\.[/\\])+/, "");
   const fullPath = path.join(distDir, safePath);
+  const fileStat = await statIfExists(fullPath);
 
-  try {
-    const fileStat = await stat(fullPath);
+  if (fileStat?.isDirectory()) {
+    return path.join(fullPath, "index.html");
+  }
 
-    if (fileStat.isDirectory()) {
-      return path.join(fullPath, "index.html");
-    }
-
+  if (fileStat) {
     return fullPath;
-  } catch {
-    const htmlPath = path.join(fullPath, "index.html");
+  }
 
-    try {
-      await stat(htmlPath);
-      return htmlPath;
-    } catch {
-      return "";
-    }
+  const htmlPath = path.join(fullPath, "index.html");
+  return (await statIfExists(htmlPath)) ? htmlPath : "";
+}
+
+async function statIfExists(filePath) {
+  try {
+    return await stat(filePath);
+  } catch {
+    return null;
   }
 }
 
@@ -821,14 +755,6 @@ function plainText(value) {
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
     .replace(/[`*_]/g, "")
     .trim();
-}
-
-function indent(value, spaces) {
-  const prefix = " ".repeat(spaces);
-  return value
-    .split("\n")
-    .map((line) => `${prefix}${line}`)
-    .join("\n");
 }
 
 function escapeHtml(value) {

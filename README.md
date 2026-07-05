@@ -1,8 +1,30 @@
-# tiny.md
+# tiny.md - Markdown Static Site Generator
 
-This is a tiny dependency-free static site generator. It turns folders with `index.md` files into semantic HTML pages, copies your CSS, and keeps the authoring model small.
+tiny.md is a small Markdown static site generator for folder-based websites, documentation, portfolios, project pages, and GitHub Pages sites. It turns folders with `index.md` files into semantic HTML pages, copies your CSS and assets, and keeps the authoring model easy to understand.
+
+## Features
+
+- Folder-based pages with clean URLs
+- Markdown content with GitHub-flavored Markdown support
+- Page-local assets and site-wide theme assets
+- Default CSS that user CSS can override
+- SEO-friendly metadata, canonical URLs, Open Graph tags, Twitter card tags, and `sitemap.xml`
+- A tiny `npx tiny.md my-site` starter workflow
 
 ## Quick Start
+
+Create a new starter site with npx:
+
+```sh
+npx tiny.md my-site
+cd my-site
+npm run build
+npm run dev
+```
+
+`npx tiny.md my-site` creates a simple site with Home and About pages, default styles, theme overrides, and build scripts.
+
+If you are working inside this repository directly, use:
 
 ```sh
 npm run build
@@ -22,8 +44,7 @@ site/
   site.md
   content/
     index.md
-    workspace.svg
-    about/
+    notes/
       index.md
   theme/
     style.css
@@ -37,8 +58,7 @@ This builds to:
 ```txt
 dist/
   index.html
-  workspace.svg
-  about/
+  notes/
     index.html
   default.css
   style.css
@@ -67,7 +87,7 @@ The build copies non-Markdown files from `site/content/` into the matching `dist
 Use normal Markdown links for internal navigation:
 
 ```md
-[About](/about)
+[Notes](/notes)
 [Home](/)
 ```
 
@@ -93,6 +113,7 @@ The first `# Heading` becomes the page title. You can override metadata with opt
 ---
 title: About
 description: A short description for search results and sharing.
+image: portrait.jpg
 ---
 
 # About
@@ -102,15 +123,16 @@ Site-wide metadata lives in `site/site.md`:
 
 ```md
 ---
-name: Isak Anderson
+name: My tiny.md site
 description: A simple static site generated from folders and Markdown.
+image: /share.png
 footer: false
 ---
 
 ## Navigation
 
 - [Home](/)
-- [About](/about)
+- [Notes](/notes)
 ```
 
 The domain is optional. The site builds and runs without it.
@@ -119,12 +141,24 @@ When you are ready to publish, add `url` so the build can generate canonical URL
 
 ```md
 ---
-name: Isak Anderson
+name: My tiny.md site
 description: A simple static site generated from folders and Markdown.
 url: https://example.com
+image: /share.png
 footer: false
 ---
 ```
+
+## Search and Sharing
+
+tiny.md generates search and social metadata from frontmatter:
+
+- `title` controls the page `<title>` and Open Graph/Twitter titles.
+- `description` becomes the meta description and sharing description.
+- `image` becomes the Open Graph and Twitter card image.
+- `url` in `site/site.md` enables canonical URLs and `sitemap.xml`.
+
+Use `image` in `site/site.md` for a default share image across the site. Use `image` in a page's frontmatter to override it for that page. Page-relative images resolve beside that page's `index.md`; root-relative images resolve from the site root.
 
 ## Header Links
 
@@ -134,8 +168,8 @@ Define your main header links in `site/site.md`:
 ## Navigation
 
 - [Home](/)
-- [About](/about)
-- [Pricing](/pricing)
+- [Notes](/notes)
+- [Projects](/projects)
 ```
 
 If you ever want right-side header buttons, add an `Actions` section:
@@ -147,7 +181,7 @@ If you ever want right-side header buttons, add an `Actions` section:
 - [Start free trial](/signup)
 ```
 
-Internal links like `/about` are normalized to clean page URLs. External links like `https://example.com` are left alone.
+Internal links like `/notes` are normalized to clean page URLs. External links like `https://example.com` are left alone.
 
 If `nav` is not defined, the generator creates navigation from your page folders.
 
@@ -238,16 +272,19 @@ The most important wrapper is:
 
 ## Markdown Support
 
-The built-in parser supports the practical basics:
+Markdown is rendered with `marked`, so pages support CommonMark and GitHub-flavored Markdown features such as:
 
-- Headings
+- Headings, including setext headings
 - Paragraphs
-- Links and images
-- Bold and italic
+- Links and images, including optional titles
+- Bold, italic, and strikethrough
 - Inline code
-- Fenced code blocks
-- Ordered and unordered lists
+- Fenced and indented code blocks
+- Ordered, unordered, nested, and task lists
 - Blockquotes
 - Horizontal rules
+- Tables
+- Autolinks
+- Raw HTML
 
-It is intentionally small. If you later need advanced Markdown extensions, the generator can be upgraded to use a dedicated Markdown parser.
+tiny.md still handles site-specific behavior around the parser: internal page links are normalized to clean trailing-slash URLs, page-local image paths continue to work, and standalone YouTube URLs become responsive embeds.

@@ -1,10 +1,16 @@
 ---
-name: Isak Anderson
-description: A simple static site generated from folders and Markdown.
+name: tiny.md
+description: A tiny Markdown static site generator for folder-based websites, docs, portfolios, and GitHub Pages.
 footer: false
 ---
 
 ## Navigation
 
 - [Home](/)
-- [About](/about)
+- [Quickstart](/quickstart)
+- [Use cases](/use-cases)
+- [Tutorials](/tutorials)
+
+## Actions
+
+- [Create a site](/quickstart)
