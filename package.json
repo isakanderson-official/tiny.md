@@ -24,7 +24,7 @@
     "seo"
   ],
   "bin": {
-    "tiny.md": "./create.mjs"
+    "tiny.md": "create.mjs"
   },
   "files": [
     "build.mjs",
