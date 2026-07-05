@@ -9,20 +9,20 @@ tiny.md is a small Markdown static site generator for folder-based websites, doc
 - Page-local assets and site-wide theme assets
 - Default CSS that user CSS can override
 - SEO-friendly metadata, canonical URLs, Open Graph tags, Twitter card tags, and `sitemap.xml`
-- A tiny `npx tiny.md my-site` starter workflow
+- A tiny `npx create-tiny-md my-site` starter workflow
 
 ## Quick Start
 
 Create a new starter site with npx:
 
 ```sh
-npx tiny.md my-site
+npx create-tiny-md my-site
 cd my-site
 npm run build
 npm run dev
 ```
 
-`npx tiny.md my-site` creates a simple site with Home and About pages, default styles, theme overrides, and build scripts.
+`npx create-tiny-md my-site` creates a simple site with Home and About pages, default styles, theme overrides, and build scripts.
 
 If you are working inside this repository directly, use:
 

@@ -209,11 +209,11 @@ function printHelp() {
   console.log(`Create a tiny.md starter site.
 
 Usage:
-  npx tiny.md [directory]
+  npx create-tiny-md [directory]
 
 Examples:
-  npx tiny.md my-site
-  npx tiny.md .
+  npx create-tiny-md my-site
+  npx create-tiny-md .
 `);
 }
 

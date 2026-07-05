@@ -8,7 +8,7 @@ description: Create and build your first tiny.md site.
 Use `npx` to create a starter site:
 
 ```sh
-npx tiny.md my-site
+npx create-tiny-md my-site
 cd my-site
 npm run build
 npm run dev

@@ -49,7 +49,7 @@ dist/
 Create a new site with one command:
 
 ```sh
-npx tiny.md my-site
+npx create-tiny-md my-site
 ```
 
 Then edit Markdown files in `site/content/` and run `npm run build` when you are ready to publish.

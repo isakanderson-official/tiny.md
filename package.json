@@ -1,5 +1,5 @@
 {
-  "name": "tiny.md",
+  "name": "create-tiny-md",
   "description": "A tiny Markdown static site generator for folder-based websites.",
   "version": "1.0.0",
   "type": "module",
@@ -24,7 +24,7 @@
     "seo"
   ],
   "bin": {
-    "tiny.md": "create.mjs"
+    "create-tiny-md": "create.mjs"
   },
   "files": [
     "build.mjs",
