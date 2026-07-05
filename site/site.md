@@ -14,3 +14,5 @@ footer: false
 ## Actions
 
 - [Create a site](/quickstart)
+- [npm](https://www.npmjs.com/package/create-tiny-md)
+- [GitHub](https://github.com/isakanderson-official/tiny.md)

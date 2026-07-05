@@ -1,9 +1,9 @@
 {
   "name": "create-tiny-md",
   "description": "A tiny Markdown static site generator for folder-based websites.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
-  "homepage": "https://github.com/isakanderson-official/tiny.md#readme",
+  "homepage": "https://isakanderson-official.github.io/tiny.md/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/isakanderson-official/tiny.md.git"
@@ -32,6 +32,9 @@
     "defaults",
     "README.md"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "node build.mjs",
     "dev": "node build.mjs --watch --serve",

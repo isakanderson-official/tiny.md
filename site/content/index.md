@@ -6,6 +6,8 @@ description: tiny.md turns folders of Markdown into fast static websites for doc
 
 A small static site generator for people who want a website they can understand.
 
+[npm package](https://www.npmjs.com/package/create-tiny-md) · [GitHub repo](https://github.com/isakanderson-official/tiny.md)
+
 ![tiny.md workflow](workflow.svg)
 
 tiny.md turns a `site/` folder into a complete `dist/` folder. Write pages in Markdown, keep assets beside the pages that use them, and customize the design with plain CSS.

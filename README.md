@@ -2,6 +2,8 @@
 
 tiny.md is a small Markdown static site generator for folder-based websites, documentation, portfolios, project pages, and GitHub Pages sites. It turns folders with `index.md` files into semantic HTML pages, copies your CSS and assets, and keeps the authoring model easy to understand.
 
+[Demo site](https://isakanderson-official.github.io/tiny.md/) · [npm package](https://www.npmjs.com/package/create-tiny-md) · [GitHub repo](https://github.com/isakanderson-official/tiny.md)
+
 ## Features
 
 - Folder-based pages with clean URLs
